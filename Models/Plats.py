@@ -12,7 +12,7 @@ taules = Table(
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 plats = Table(
-    "Plats",
+    "Plat",
     meta_data,
     Column("idPlat", Integer, primary_key=True, autoincrement=True),
     Column("nomPlat", String(100), nullable=False),
