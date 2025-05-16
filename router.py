@@ -8,9 +8,12 @@ from schemas.detallComanda_schema import *
 from schemas.comanda_Schema import *
 from schemas.caracteristiques_Schema import *
 from Models.Plats import *
+from encriptacio import *
 from db import conn
 from fastapi.responses import FileResponse
 import os
+
+from schemas.user_schema import UsuariSchema, UsuariCreateSchema, LoginSchema
 
 # Obtiene la ruta absoluta del directorio del archivo actual
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -176,34 +179,6 @@ def delete_detall_comanda(detall_id: int):
     return {"message": "Detall eliminat correctament"}
 
 
-
-# ===========================================================================================================================================================================
-#                                IMATGES
-# ===========================================================================================================================================================================
-
-@router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    save_path = os.path.join(UPLOAD_DIR, file.filename)
-
-    # Lee el contenido del archivo y lo guarda en el directorio
-    content = await file.read()
-    with open(save_path, "wb") as f:
-        f.write(content)
-
-    # Devuelve el nombre del archivo y el estado de la carga
-    return {"filename": file.filename, "status": "uploaded"}
-
-@router.get("/file/{filename}")
-async def get_file(filename: str):
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    print(file_path)
-
-    # Verifica si el archivo existe, si no, lanza una excepción 404
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-
-    # Devuelve el archivo
-    return FileResponse(file_path)
 # ===========================================================================================================================================================================
 #                                Caracteristica
 # ===========================================================================================================================================================================
@@ -280,3 +255,113 @@ def delete_caracteristica_detall(detall_id: int):
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Característica del detall no trobada")
     return {"message": "Característica del detall eliminada correctament"}
+
+
+@router.get("/api/comandes/ultimaComanda")
+def obtenir_ultima_comanda_id():
+    result = conn.execute(
+        select(Comanda.c.idComanda).order_by(Comanda.c.idComanda.desc())
+    ).first()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="No s'ha trobat cap comanda")
+
+    return {"ultima_id_comanda": result.idComanda}
+
+# ===========================================================================================================================================================================
+#                                IMATGES
+# ===========================================================================================================================================================================
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    save_path = os.path.join(UPLOAD_DIR, file.filename)
+
+    # Lee el contenido del archivo y lo guarda en el directorio
+    content = await file.read()
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    # Devuelve el nombre del archivo y el estado de la carga
+    return {"filename": file.filename, "status": "uploaded"}
+
+@router.get("/file/{filename}")
+async def get_file(filename: str):
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    print(file_path)
+
+    # Verifica si el archivo existe, si no, lanza una excepción 404
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    # Devuelve el archivo
+    return FileResponse(file_path)
+
+# ===========================================================================================================================================================================
+#                                USUARIS
+# ===========================================================================================================================================================================
+
+@router.post("/afegir/usuari", response_model=UsuariSchema)
+def create_usuari(data: UsuariCreateSchema):
+    hashed_password = hash_password(data.contrasenya)
+    user_data = data.dict()
+    user_data["contrasenya"] = hashed_password
+
+    result = conn.execute(Usuari.insert().values(**user_data))
+    conn.commit()
+    return {"idUsuari": result.lastrowid, **data.dict(exclude={"contrasenya"}), "contrasenya": hashed_password}
+
+
+@router.get("/api/usuari/{usuari_id}", response_model=UsuariSchema)
+def get_usuari(usuari_id: int):
+    result = conn.execute(select(Usuari).where(Usuari.c.idUsuari == usuari_id)).first()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Usuari no trobat")
+    return dict(result._mapping)
+
+
+@router.get("/api/usuaris", response_model=list[UsuariSchema])
+def get_all_usuaris():
+    results = conn.execute(select(Usuari)).fetchall()
+    return [dict(row._mapping) for row in results]
+
+
+@router.put("/modificar/usuari/{usuari_id}", response_model=UsuariSchema)
+def update_usuari(usuari_id: int, data: UsuariCreateSchema):
+    user_data = data.dict()
+    user_data["contrasenya"] = hash_password(user_data["contrasenya"])
+
+    result = conn.execute(
+        Usuari.update().where(Usuari.c.idUsuari == usuari_id).values(**user_data)
+    )
+    conn.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Usuari no trobat")
+    return {"idUsuari": usuari_id, **user_data}
+
+
+@router.delete("/eliminar/usuari/{usuari_id}")
+def delete_usuari(usuari_id: int):
+    result = conn.execute(Usuari.delete().where(Usuari.c.idUsuari == usuari_id))
+    conn.commit()
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Usuari no trobat")
+    return {"message": "Usuari eliminat correctament"}
+
+
+from fastapi.responses import JSONResponse
+
+# ===========================================================================================================================================================================
+#                                LOGIN
+# ===========================================================================================================================================================================
+
+@router.post("/login")
+def login_usuari(data: LoginSchema):
+    result = conn.execute(select(Usuari).where(Usuari.c.nomUsuari == data.nomUsuari)).first()
+    if result is None:
+        raise HTTPException(status_code=401, detail="Credencials incorrectes")
+
+    usuari = result._mapping
+    if not verify_password(data.contrasenya, usuari["contrasenya"]):
+        raise HTTPException(status_code=401, detail="Credencials incorrectes")
+
+    return JSONResponse(content={"success": True})  # Devuelve un objeto JSON

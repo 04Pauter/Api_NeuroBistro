@@ -73,5 +73,13 @@ CaracteristicaDetallComanda = Table(
     Column("idCaracteristica", Integer, ForeignKey("Caracteristiques.idCaracteristica"))
 )
 
+Usuari = Table(
+    "Usuaris",
+    meta_data,
+    Column("idUsuari", Integer, primary_key=True, autoincrement=True),
+    Column("nomUsuari", String(100), nullable=False),
+    Column("contrasenya", String(255), nullable=False)
+)
+
 # Crear tablas si no existen
 meta_data.create_all(engine)
