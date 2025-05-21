@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from schemas.caracteristiques_Detall_Comanda_Schema import *
 from schemas.plat_schema import *
 from schemas.taula_schema import *
@@ -12,8 +12,16 @@ from encriptacio import *
 from db import conn
 from fastapi.responses import FileResponse
 import os
+from db import get_db
+from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from typing import List
+from typing import List
+from sqlalchemy import insert
 
-from schemas.user_schema import UsuariSchema, UsuariCreateSchema, LoginSchema
+from schemas.user_schema import UsuariSchema, UsuariCreateSchema, LoginSchema, ComandaCuinerResponse
 
 # Obtiene la ruta absoluta del directorio del archivo actual
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -108,11 +116,32 @@ def delete_plat(plat_id: int):
 #                                COMANDES
 # =============================================================================
 
+
+@router.get("/api/comanda/ultimaComanda", response_model=ComandaSchema)
+def get_last_comanda():
+    result = conn.execute(
+        select(Comanda).order_by(desc(Comanda.c.idComanda)).limit(1)
+    ).first()
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Comanda no trobada")
+
+    # result es una fila, conviértelo a dict:
+    comanda_dict = dict(result._mapping)  # _mapping contiene los campos y valores
+
+    return comanda_dict
+
+
 @router.post("/afegir/comanda", response_model=ComandaSchema)
 def create_comanda(data_comanda: ComandaCreateSchema):
-    result = conn.execute(Comanda.insert().values(**data_comanda.dict()))
-    conn.commit()
-    return {"idComanda": result.lastrowid, **data_comanda.dict()}
+    try:
+        result = conn.execute(Comanda.insert().values(**data_comanda.dict()))
+        conn.commit()
+        return {"idComanda": result.lastrowid, **data_comanda.dict()}
+    except Exception as e:
+        print("Error al insertar comanda:", e)
+        raise HTTPException(status_code=500, detail="Error interno al insertar comanda")
+
 
 @router.get("/api/comanda/{comanda_id}", response_model=ComandaSchema)
 def get_comanda(comanda_id: int):
@@ -141,6 +170,51 @@ def delete_comanda(comanda_id: int):
         raise HTTPException(status_code=404, detail="Comanda no trobada")
     return {"message": "Comanda eliminada correctament"}
 
+
+#TODO =============================================================================
+#                          COMANDA Kotlin
+# =============================================================================
+#@router.get("/cuiner/comandes", response_model=List[ComandaCuinerResponse])
+#def get_comandes_cuiner(db: Session = Depends(get_db)):
+#    resposta = []
+#
+    # 1. Obtener comandes AGAFADA
+#    comandes_result = db.execute(
+#        select(comanda).where(comanda.c.estat == "AGAFADA")
+#    ).fetchall()
+
+#    for com in comandes_result:
+#        comanda_id = com.id
+#        taula_id = com.taula_id
+
+        # 2. Obtener detalls per comanda
+#        detalls_result = db.execute(
+#            select(detall_comanda).where(detall_comanda.c.comanda_id == comanda_id)
+#        ).fetchall()
+
+#        plats_resposta = []
+
+#        for detall in detalls_result:
+
+
+#            plat_result = db.execute(
+#                select(plat).where(plat.c.id == detall.plat_id)
+#            ).first()
+#            if plat_result:
+#                plats_resposta.append({
+#                   "nom": plat_result.nom,
+#                    "estat": com.estat,
+#                    "tipus": plat_result.tipus
+#               })
+#
+#        resposta.append({
+#            "idComanda": comanda_id,
+#            "taulaId": taula_id,
+#            "plats": plats_resposta
+#        })
+
+#    return resposta
+
 # =============================================================================
 #                          DETALLS DE COMANDA
 # =============================================================================
@@ -150,6 +224,21 @@ def create_detall_comanda(data: DetallComandaCreateSchema):
     result = conn.execute(DetallComanda.insert().values(**data.dict()))
     conn.commit()
     return {"idDetall": result.lastrowid, **data.dict()}
+
+@router.post("/afegir/detalls_comanda", response_model=List[DetallComandaCreateSchema])
+def create_varis_detalls_comanda(detalls: List[DetallComandaCreateSchema]):
+    if not detalls:
+        raise HTTPException(status_code=400, detail="La llista de detalls està buida")
+
+    try:
+        # Construir múltiples inserts con SQLAlchemy
+        query = insert(DetallComanda).values([d.dict() for d in detalls])
+        result = conn.execute(query)
+        conn.commit()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al inserir detalls: {e}")
+
+    return detalls
 
 @router.get("/api/detall_comanda/{detall_id}", response_model=DetallComandaSchema)
 def get_detall_comanda(detall_id: int):

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 from typing import Optional
@@ -19,3 +19,15 @@ class UsuariCreateSchema(BaseModel):
 class LoginSchema(BaseModel):
     nomUsuari: str
     contrasenya: str
+
+
+
+class PlatCuiner(BaseModel):
+    nom: str
+    estat: str
+    tipus: str
+
+class ComandaCuinerResponse(BaseModel):
+    idComanda: int
+    taulaId: int
+    plats: List[PlatCuiner]

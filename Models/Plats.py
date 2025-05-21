@@ -80,6 +80,30 @@ Usuari = Table(
     Column("nomUsuari", String(100), nullable=False),
     Column("contrasenya", String(255), nullable=False)
 )
+#TODO CODI NO FUNCIONAL
+
+#comanda = Table(
+#    "comanda", meta_data,
+#    Column("id", Integer, primary_key=True),
+#    Column("taula_id", Integer),
+#    Column("estat", String),
+#)
+
+#detall_comanda = Table(
+#    "detall_comanda",
+#    meta_data,
+#    Column("id", Integer, primary_key=True),
+#    Column("comanda_id", ForeignKey("comanda.id")),
+#    Column("plat_id", ForeignKey("plat.id")),
+#    Column("plat_propietats", String(255)),  # ✅ LONGITUD DEFINIDA
+#)
+
+#plat = Table(
+#    "plat", meta_data,
+#    Column("id", Integer, primary_key=True),
+#    Column("nom", String),
+#    Column("tipus", String),
+#)
 
 # Crear tablas si no existen
 meta_data.create_all(engine)
