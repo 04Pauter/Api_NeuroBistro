@@ -1,5 +1,7 @@
-from sqlalchemy import Table, Column, Integer, String, Text, Enum, ForeignKey, MetaData
+
 from db import engine
+
+from sqlalchemy import Table, Column, Integer, String, Text, Enum, ForeignKey, MetaData
 
 meta_data = MetaData()
 
@@ -7,7 +9,7 @@ meta_data = MetaData()
 # Taula
 # -------------------------
 Taula = Table(
-    "Taula",
+    "taula",
     meta_data,
     Column("idTaula", Integer, primary_key=True, autoincrement=True),
     Column("nomTaula", String(100), nullable=False),
@@ -18,7 +20,7 @@ Taula = Table(
 # Plat
 # -------------------------
 Plat = Table(
-    "Plat",
+    "plat",
     meta_data,
     Column("idPlat", Integer, primary_key=True, autoincrement=True),
     Column("nomPlat", String(100), nullable=False),
@@ -32,78 +34,58 @@ Plat = Table(
 # Comanda
 # -------------------------
 Comanda = Table(
-    "Comanda",
+    "comanda",
     meta_data,
     Column("idComanda", Integer, primary_key=True, autoincrement=True),
-    Column("taula_id", Integer, ForeignKey("Taula.idTaula")),
-    Column("Estat", Enum("Solicitada", "Preparada", "Pagada"), nullable=False)
+    Column("taula_id", Integer, ForeignKey("taula.idTaula")),
+    Column("estat", Enum("Solicitada", "Preparada", "Pagada"), nullable=False)
 )
 
 # -------------------------
 # DetallComanda
 # -------------------------
 DetallComanda = Table(
-    "DetallComanda",
+    "detall_comanda",
     meta_data,
     Column("idDetall", Integer, primary_key=True, autoincrement=True),
-    Column("comanda_id", Integer, ForeignKey("Comanda.idComanda")),
-    Column("plat_id", Integer, ForeignKey("Plat.idPlat")),
-    Column("Plat_propietats", Text)
+    Column("comanda_id", Integer, ForeignKey("comanda.idComanda")),
+    Column("plat_id", Integer, ForeignKey("plat.idPlat")),
+    Column("plat_propietats", String(255))
 )
 
 # -------------------------
 # Caracteristica
 # -------------------------
 Caracteristica = Table(
-    "Caracteristiques",
+    "caracteristica",
     meta_data,
     Column("idCaracteristica", Integer, primary_key=True, autoincrement=True),
-    Column("idPlat", Integer, ForeignKey("Plat.idPlat")),
-    Column("Caracteristica", Text, nullable=False)
+    Column("idPlat", Integer, ForeignKey("plat.idPlat")),
+    Column("caracteristica", Text, nullable=False)
 )
 
 # -------------------------
 # CaracteristicaDetallComanda
 # -------------------------
 CaracteristicaDetallComanda = Table(
-    "CaracteristiquesDetallComanda",
+    "caracteristica_detall_comanda",
     meta_data,
     Column("idCDC", Integer, primary_key=True, autoincrement=True),
-    Column("idDetallComanda", Integer, ForeignKey("DetallComanda.idDetall")),
-    Column("idCaracteristica", Integer, ForeignKey("Caracteristiques.idCaracteristica"))
+    Column("idDetallComanda", Integer, ForeignKey("detall_comanda.idDetall")),
+    Column("idCaracteristica", Integer, ForeignKey("caracteristica.idCaracteristica"))
 )
 
+# -------------------------
+# Usuari
+# -------------------------
 Usuari = Table(
-    "Usuaris",
+    "usuari",
     meta_data,
     Column("idUsuari", Integer, primary_key=True, autoincrement=True),
     Column("nomUsuari", String(100), nullable=False),
     Column("contrasenya", String(255), nullable=False)
 )
-#TODO CODI NO FUNCIONAL
 
-#comanda = Table(
-#    "comanda", meta_data,
-#    Column("id", Integer, primary_key=True),
-#    Column("taula_id", Integer),
-#    Column("estat", String),
-#)
-
-#detall_comanda = Table(
-#    "detall_comanda",
-#    meta_data,
-#    Column("id", Integer, primary_key=True),
-#    Column("comanda_id", ForeignKey("comanda.id")),
-#    Column("plat_id", ForeignKey("plat.id")),
-#    Column("plat_propietats", String(255)),  # ✅ LONGITUD DEFINIDA
-#)
-
-#plat = Table(
-#    "plat", meta_data,
-#    Column("id", Integer, primary_key=True),
-#    Column("nom", String),
-#    Column("tipus", String),
-#)
-
-# Crear tablas si no existen
+# Crear les taules a la base de dades
 meta_data.create_all(engine)
+
