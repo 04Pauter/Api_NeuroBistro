@@ -212,7 +212,8 @@ def get_comandes_cuiner(db: Session = Depends(get_db)):
                 plats_resposta.append({
                    "nom": plat_result.nomPlat,
                     "estat": com.Estat,
-                    "tipus": plat_result.tipus.value if hasattr(plat_result.tipus, "value") else plat_result.tipus
+                    "tipus": plat_result.tipus.value if hasattr(plat_result.tipus, "value") else plat_result.tipus,
+                    "imatge": plat_result.imatge
                 })
 
         resposta.append({

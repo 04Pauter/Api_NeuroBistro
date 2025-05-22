@@ -30,6 +30,7 @@ class PlatCuiner(BaseModel):
     nom: str
     estat: str
     tipus: str
+    imatge: str  # afegim el camp imatge
 
 class ComandaCuinerResponse(BaseModel):
     idComanda: int
