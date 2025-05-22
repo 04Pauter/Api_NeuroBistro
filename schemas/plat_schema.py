@@ -1,6 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Literal
-
+from typing import Optional, Literal, List
 
 
 # -------------------------
@@ -26,6 +25,16 @@ class PlatCreateSchema(BaseModel):
     tipus: Literal['1r', '2n', 'Postres', 'Begudes']
 
 
+
+class PlatCuiner(BaseModel):
+    nom: str
+    estat: str
+    tipus: str
+
+class ComandaCuinerResponse(BaseModel):
+    idComanda: int
+    taulaId: int
+    plats: List[PlatCuiner]
 
 
 

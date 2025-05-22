@@ -9,10 +9,9 @@ from schemas.comanda_Schema import *
 from schemas.caracteristiques_Schema import *
 from Models.Plats import *
 from encriptacio import *
-from db import conn
+from db import conn, get_db
 from fastapi.responses import FileResponse
 import os
-from db import get_db
 from fastapi import APIRouter, HTTPException
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -174,46 +173,55 @@ def delete_comanda(comanda_id: int):
 #TODO =============================================================================
 #                          COMANDA Kotlin
 # =============================================================================
-#@router.get("/cuiner/comandes", response_model=List[ComandaCuinerResponse])
-#def get_comandes_cuiner(db: Session = Depends(get_db)):
-#    resposta = []
-#
-    # 1. Obtener comandes AGAFADA
-#    comandes_result = db.execute(
-#        select(comanda).where(comanda.c.estat == "AGAFADA")
-#    ).fetchall()
 
-#    for com in comandes_result:
-#        comanda_id = com.id
-#        taula_id = com.taula_id
+
+
+
+router = APIRouter()
+
+
+#TODO =============================================================================
+#                          COMANDA Kotlin
+# =============================================================================
+@router.get("/cuiner/comandesCuiner", response_model=List[ComandaCuinerResponse])
+def get_comandes_cuiner(db: Session = Depends(get_db)):
+    resposta = []
+
+    # 1. Obtener comandes amb estat "Solicitada" (o "AGAFADA" si ho vols així)
+    comandes_result = db.execute(
+        select(Comanda).where(Comanda.c.Estat == "Solicitada")
+    ).fetchall()
+
+    for com in comandes_result:
+        comanda_id = com.idComanda
+        taula_id = com.taula_id
 
         # 2. Obtener detalls per comanda
-#        detalls_result = db.execute(
-#            select(detall_comanda).where(detall_comanda.c.comanda_id == comanda_id)
-#        ).fetchall()
+        detalls_result = db.execute(
+            select(DetallComanda).where(DetallComanda.c.comanda_id == comanda_id)
+        ).fetchall()
 
-#        plats_resposta = []
+        plats_resposta = []
 
-#        for detall in detalls_result:
+        for detall in detalls_result:
+            plat_result = db.execute(
+                select(Plat).where(Plat.c.idPlat == detall.plat_id)
+            ).first()
 
+            if plat_result:
+                plats_resposta.append({
+                   "nom": plat_result.nomPlat,
+                    "estat": com.Estat,
+                    "tipus": plat_result.tipus.value if hasattr(plat_result.tipus, "value") else plat_result.tipus
+                })
 
-#            plat_result = db.execute(
-#                select(plat).where(plat.c.id == detall.plat_id)
-#            ).first()
-#            if plat_result:
-#                plats_resposta.append({
-#                   "nom": plat_result.nom,
-#                    "estat": com.estat,
-#                    "tipus": plat_result.tipus
-#               })
-#
-#        resposta.append({
-#            "idComanda": comanda_id,
-#            "taulaId": taula_id,
-#            "plats": plats_resposta
-#        })
+        resposta.append({
+            "idComanda": comanda_id,
+            "taulaId": taula_id,
+            "plats": plats_resposta
+        })
 
-#    return resposta
+    return resposta
 
 # =============================================================================
 #                          DETALLS DE COMANDA
